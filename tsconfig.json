@@ -1,0 +1,36 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"declaration": true,
+		"removeComments": true,
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"allowSyntheticDefaultImports": true,
+		"target": "es2017",
+		"sourceMap": true,
+		"outDir": "./dist",
+		"baseUrl": "./",
+		"incremental": true,
+		"skipLibCheck": false,
+		"resolveJsonModule": true,
+		"strictNullChecks": false,
+		"noImplicitAny": false,
+		"strictBindCallApply": false,
+		"forceConsistentCasingInFileNames": false,
+		"noFallthroughCasesInSwitch": false,
+		"paths": {
+			"@modules/*": ["src/modules/*"],
+			"@services/*": ["src/services/*"],
+			"@guards/*": ["src/guards/*"],
+			"@filters/*": ["src/filters/*"],
+			"@config/*": ["src/config/*"],
+			"@utils/*": ["src/utils/*"],
+			"@decorators/*": ["src/decorators/*"],
+			"@constants/*": ["src/constants/*"],
+			"@adapters/*": ["src/adapters/*"],
+			"@interfaces/*": ["src/interfaces/*"],
+			"@strategies/*": ["src/strategies/*"],
+			"@seed-data/*": ["src/seed-data/*"]
+		}
+	}
+}
