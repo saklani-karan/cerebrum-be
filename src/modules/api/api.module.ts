@@ -4,7 +4,7 @@ import { AuthController } from './auth.controller';
 import { OAuthController } from './oauth.controller';
 
 @Module({
-  imports: [AuthModule],
-  controllers: [AuthController, OAuthController],
+    imports: [AuthModule],
+    controllers: [AuthController, OAuthController],
 })
 export class ApiModule {}

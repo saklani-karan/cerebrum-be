@@ -13,37 +13,37 @@ import { PassportModule } from '@nestjs/passport';
 import { ApiModule } from '@modules/api/api.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: '.env',
+        }),
 
-    PassportModule.register({
-      session: false,
-      property: 'user',
-    }),
+        PassportModule.register({
+            session: false,
+            property: 'user',
+        }),
 
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: typeOrmConfig,
-    }),
+        TypeOrmModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: typeOrmConfig,
+        }),
 
-    CacheModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: cacheConfig,
-      isGlobal: true,
-    }),
-    AuthModule,
-    AuthConfigModule,
-    UserModule,
-    SentryModule.forRoot(),
-    ...StrategyModules,
-    ApiModule,
-  ],
-  controllers: [],
-  providers: [],
+        CacheModule.registerAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: cacheConfig,
+            isGlobal: true,
+        }),
+        AuthModule,
+        AuthConfigModule,
+        UserModule,
+        SentryModule.forRoot(),
+        ...StrategyModules,
+        ApiModule,
+    ],
+    controllers: [],
+    providers: [],
 })
 export class AppModule {}

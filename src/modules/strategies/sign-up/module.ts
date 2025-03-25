@@ -6,13 +6,13 @@ import { SignUpStrategyImpl, SIGN_UP_STRATEGY } from '.';
 
 @Global()
 @Module({
-  imports: [UserModule, AuthConfigModule, AuthModule],
-  providers: [
-    {
-      provide: SIGN_UP_STRATEGY,
-      useClass: SignUpStrategyImpl,
-    },
-  ],
-  exports: [SIGN_UP_STRATEGY],
+    imports: [UserModule, AuthConfigModule, AuthModule],
+    providers: [
+        {
+            provide: SIGN_UP_STRATEGY,
+            useClass: SignUpStrategyImpl,
+        },
+    ],
+    exports: [SIGN_UP_STRATEGY],
 })
 export class SignUpStrategyModule {}

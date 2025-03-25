@@ -5,9 +5,9 @@ import { AuthService } from './auth.service';
 import { OAuthGuard } from './guards/oauth-guard';
 
 @Module({
-  imports: [UserModule, AuthConfigModule],
-  providers: [OAuthGuard, AuthService],
-  controllers: [],
-  exports: [AuthService, OAuthGuard],
+    imports: [UserModule, AuthConfigModule],
+    providers: [OAuthGuard, AuthService],
+    controllers: [],
+    exports: [AuthService, OAuthGuard],
 })
 export class AuthModule {}

@@ -19,45 +19,41 @@ export const SIGN_UP_STRATEGY = 'sign_up_strategy';
 
 @Injectable({ scope: Scope.REQUEST })
 @Global()
-export class SignUpStrategyImpl
-  extends Transactional
-  implements SignUpStrategyInterface
-{
-  constructor(
-    @Inject(REQUEST) private readonly request: Request,
-    @Inject(SIGN_PASSWORD_STRATEGY)
-    private readonly signPasswordStrategy: SignPasswordStrategyInterface,
-    private readonly userService: UserService,
-    private readonly authService: AuthService,
-    private readonly authConfigService: AuthConfigService,
-    @InjectEntityManager() manager: EntityManager,
-  ) {
-    super(manager);
-  }
+export class SignUpStrategyImpl extends Transactional implements SignUpStrategyInterface {
+    constructor(
+        @Inject(REQUEST) private readonly request: Request,
+        @Inject(SIGN_PASSWORD_STRATEGY)
+        private readonly signPasswordStrategy: SignPasswordStrategyInterface,
+        private readonly userService: UserService,
+        private readonly authService: AuthService,
+        private readonly authConfigService: AuthConfigService,
+        @InjectEntityManager() manager: EntityManager,
+    ) {
+        super(manager);
+    }
 
-  exec(request: SignUpRequest): Promise<User> {
-    return this.runTransaction(async (manager: EntityManager) => {
-      const txUserService = this.userService.withTransaction(manager);
-      const txAuthService = this.authService.withTransaction(manager);
-      const txAuthConfigService =
-        this.authConfigService.withTransaction(manager);
+    exec(request: SignUpRequest): Promise<User> {
+        return this.runTransaction(async (manager: EntityManager) => {
+            const txUserService = this.userService.withTransaction(manager);
+            const txAuthService = this.authService.withTransaction(manager);
+            const txAuthConfigService = this.authConfigService.withTransaction(manager);
 
-      const { email, password } = request;
-      const user = await txUserService.create({ email });
+            const { email, password } = request;
+            const user = await txUserService.create({ email });
 
-      const hashedPassword = await this.signPasswordStrategy.sign(password);
-      await txAuthConfigService.create({
-        userId: user.id,
-        config: {
-          password: hashedPassword,
-        },
-        provider: LocalStrategy.provider,
-      } as DeepPartial<AuthConfig>);
+            const hashedPassword = await this.signPasswordStrategy.sign(password);
+            await txAuthConfigService.create({
+                userId: user.id,
+                config: {
+                    password: hashedPassword,
+                },
+                provider: LocalStrategy.provider,
+            } as DeepPartial<AuthConfig>);
 
-      this.request.user = user;
-      await txAuthService.sign();
+            this.request.user = user;
+            await txAuthService.sign();
 
-      return user;
-    });
-  }
+            return user;
+        });
+    }
 }

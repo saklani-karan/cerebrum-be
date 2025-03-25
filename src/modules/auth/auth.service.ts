@@ -11,40 +11,40 @@ import { EntityManager } from 'typeorm';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuthService extends Transactional {
-  constructor(
-    @Inject(REQUEST) private readonly request: Request,
-    private readonly userService: UserService,
-    @InjectEntityManager() manager: EntityManager,
-  ) {
-    super(manager);
-  }
-
-  async sign(): Promise<void> {
-    const user = this.request.user;
-    this.request.session.userId = user.id;
-    return;
-  }
-
-  async resolve(): Promise<User> {
-    if (!this.request.session.userId) {
-      throwException(ErrorTypes.INVALID_ARGUMENTS, {
-        message: 'userId not found in session',
-      });
+    constructor(
+        @Inject(REQUEST) private readonly request: Request,
+        private readonly userService: UserService,
+        @InjectEntityManager() manager: EntityManager,
+    ) {
+        super(manager);
     }
 
-    const userId = this.request.session.userId;
-    const user = await this.userService.get(userId);
+    async sign(): Promise<void> {
+        const user = this.request.user;
+        this.request.session.userId = user.id;
+        return;
+    }
 
-    return user;
-  }
+    async resolve(): Promise<User> {
+        if (!this.request.session.userId) {
+            throwException(ErrorTypes.INVALID_ARGUMENTS, {
+                message: 'userId not found in session',
+            });
+        }
 
-  async logout(): Promise<void> {
-    this.request.session.userId = null;
-    return;
-  }
+        const userId = this.request.session.userId;
+        const user = await this.userService.get(userId);
 
-  async me(): Promise<User> {
-    const userId = this.request.session.userId;
-    return this.userService.get(userId);
-  }
+        return user;
+    }
+
+    async logout(): Promise<void> {
+        this.request.session.userId = null;
+        return;
+    }
+
+    async me(): Promise<User> {
+        const userId = this.request.session.userId;
+        return this.userService.get(userId);
+    }
 }

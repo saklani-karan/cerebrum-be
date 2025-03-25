@@ -4,8 +4,8 @@ import { AuthConfig } from './auth-config.entity';
 import { AuthConfigService } from './auth-config.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AuthConfig])],
-  providers: [AuthConfigService],
-  exports: [AuthConfigService],
+    imports: [TypeOrmModule.forFeature([AuthConfig])],
+    providers: [AuthConfigService],
+    exports: [AuthConfigService],
 })
 export class AuthConfigModule {}

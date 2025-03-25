@@ -8,8 +8,8 @@ import { MicrosoftStrategy } from './microsoft';
 
 @Global()
 @Module({
-  providers: [LocalStrategy, GoogleStrategy],
-  exports: [LocalStrategy, GoogleStrategy],
-  imports: [UserModule, AuthModule, AuthConfigModule],
+    providers: [LocalStrategy, GoogleStrategy],
+    exports: [LocalStrategy, GoogleStrategy],
+    imports: [UserModule, AuthModule, AuthConfigModule],
 })
 export class AuthStrategyModule {}
