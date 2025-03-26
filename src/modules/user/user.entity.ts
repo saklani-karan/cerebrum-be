@@ -14,11 +14,8 @@ export class User extends BaseEntity {
     @Column({ name: 'email', type: 'varchar', unique: true })
     email: string;
 
-    @Column({ name: 'first_name', type: 'text', nullable: true })
-    firstName: string;
-
-    @Column({ name: 'last_name', type: 'text', nullable: true })
-    lastName: string;
+    @Column({ name: 'name', type: 'text', nullable: true })
+    name: string;
 
     @Column({ name: 'dp_url', type: 'varchar', nullable: true })
     dpUrl: string;

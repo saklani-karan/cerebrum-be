@@ -1,4 +1,4 @@
-import { Injectable, Scope } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-microsoft';
 import { ConfigService } from '@nestjs/config';
@@ -7,6 +7,9 @@ import { UserService } from '@modules/user/user.service';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { User } from '@modules/user/user.entity';
+import { throwException, ErrorTypes } from '@utils/exceptions';
+import { CREATE_USER_STRATEGY } from '../create-user';
+import { CreateUserStrategyInterface } from '../create-user/types';
 
 export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
     static provider: string = 'microsoft';
@@ -15,6 +18,8 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
         private readonly authConfigService: AuthConfigService,
         private readonly userService: UserService,
         @InjectEntityManager() private readonly manager: EntityManager,
+        @Inject(CREATE_USER_STRATEGY)
+        private readonly createUserStrategy: CreateUserStrategyInterface,
     ) {
         super({
             clientID: configService.get('MICROSOFT_CLIENT_ID'),
@@ -29,17 +34,32 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
         return this.manager.transaction(async (txManager) => {
             const txUserService = this.userService.withTransaction(txManager);
             const txAuthConfigService = this.authConfigService.withTransaction(txManager);
-            const { id, displayName, emails, name } = profile;
+            const txCreateUserStrategy = this.createUserStrategy.withTransaction(txManager);
+            const email = this.resolveEmail(profile);
+            const name = this.resolveName(profile);
+            const dpUrl = this.resolveDpUrl(profile);
 
             let user: User;
             try {
-                user = await txUserService.findOrCreate({
-                    email: emails[0].value?.toLowerCase(),
-                    firstName: name?.givenName || displayName.split(' ')[0],
-                    lastName: name?.familyName || displayName.split(' ').slice(1).join(' '),
-                });
+                user = await txUserService.findByEmail(email);
             } catch (err) {
-                return done(err, null);
+                if (err.type !== ErrorTypes.ENTITY_NOT_FOUND) {
+                    throwException(err);
+                }
+                user = null;
+            }
+
+            if (!user) {
+                user = await txCreateUserStrategy.exec({
+                    email,
+                    name,
+                    dpUrl,
+                });
+            } else {
+                await txUserService.update(user.id, {
+                    name,
+                    dpUrl,
+                });
             }
 
             try {
@@ -53,5 +73,29 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
 
             return done(null, user);
         });
+    }
+
+    private resolveEmail(profile: any): string | null {
+        if (!profile?.emails?.[0]?.value) {
+            return null;
+        }
+
+        return profile.emails[0].value.toLowerCase();
+    }
+
+    private resolveName(profile: any): string | null {
+        if (!profile?.name?.givenName || !profile?.displayName) {
+            return null;
+        }
+
+        return profile.name.givenName || profile.displayName;
+    }
+
+    private resolveDpUrl(profile: any): string | null {
+        if (!profile?.photos?.[0]?.value) {
+            return null;
+        }
+
+        return profile.photos[0].value;
     }
 }

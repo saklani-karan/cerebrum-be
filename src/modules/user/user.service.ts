@@ -40,6 +40,23 @@ export class UserService extends BaseService<User> {
         });
     }
 
+    findByEmail(email: string): Promise<User> {
+        return this.runTransaction(async (manager: EntityManager) => {
+            const txRepo = manager.withRepository(this.repository);
+            const user = await txRepo.findOne({
+                where: {
+                    email: email.toLowerCase(),
+                },
+            });
+
+            if (!user) {
+                throwException(ErrorTypes.ENTITY_NOT_FOUND, { message: 'user not found' });
+            }
+
+            return user;
+        });
+    }
+
     protected isUnique(entity: User): void | Promise<void> {
         return this.runTransaction(async (manager: EntityManager) => {
             const txRepo = manager.withRepository(this.repository);

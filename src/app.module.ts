@@ -11,6 +11,7 @@ import { AuthConfigModule } from '@modules/auth-config/auth-config.module';
 import { UserModule } from '@modules/user/user.module';
 import { PassportModule } from '@nestjs/passport';
 import { ApiModule } from '@modules/api/api.module';
+import { WorkspaceModule } from '@modules/workspace/workspace.module';
 
 @Module({
     imports: [
@@ -40,6 +41,7 @@ import { ApiModule } from '@modules/api/api.module';
         AuthConfigModule,
         UserModule,
         SentryModule.forRoot(),
+        WorkspaceModule,
         ...StrategyModules,
         ApiModule,
     ],

@@ -4,6 +4,8 @@ import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 
 @Entity('workspace')
 export class Workspace extends BaseEntity {
+    identifier: string = 'workspace';
+
     @Column({ type: 'varchar' })
     name: string;
 

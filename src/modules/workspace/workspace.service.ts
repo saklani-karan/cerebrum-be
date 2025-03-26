@@ -23,11 +23,12 @@ export class WorkspaceService extends BaseService<Workspace> {
     create(request: CreateWorkspace): Promise<Workspace> {
         return this.runTransaction(async (manager: EntityManager) => {
             const txRepo = manager.withRepository(this.repository);
+            const txUserService = this.userService.withTransaction(manager);
             const { name, adminId } = request;
 
             let admin: User;
             if (adminId) {
-                admin = await this.userService.get(adminId);
+                admin = await txUserService.get(adminId);
             } else {
                 admin = this.resolveUserFromRequest();
             }
