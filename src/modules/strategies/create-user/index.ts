@@ -7,6 +7,9 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { UserService } from '@modules/user/user.service';
 import { WorkspaceService } from '@modules/workspace/workspace.service';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import UserQueue from '@queue/user.queue';
 
 export const CREATE_USER_STRATEGY = 'create_user_strategy';
 
@@ -17,6 +20,7 @@ export class CreateUserStrategyImpl extends Transactional implements CreateUserS
         private readonly userService: UserService,
         private readonly workspaceService: WorkspaceService,
         private readonly configService: ConfigService,
+        @InjectQueue(UserQueue.queue) private readonly queue: Queue,
     ) {
         super(manager);
     }
@@ -31,7 +35,6 @@ export class CreateUserStrategyImpl extends Transactional implements CreateUserS
                 name,
                 dpUrl,
             });
-            console.log('user', user);
 
             const workspaceName = this.resolveWorkspaceName();
 
@@ -40,7 +43,11 @@ export class CreateUserStrategyImpl extends Transactional implements CreateUserS
                 adminId: user.id,
             });
 
-            console.log('workspace', workspace);
+            try {
+                await this.queue.add('user-created', user);
+            } catch (error) {
+                throw error;
+            }
 
             return user;
         });

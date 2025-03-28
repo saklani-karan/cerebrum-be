@@ -12,6 +12,9 @@ import { UserModule } from '@modules/user/user.module';
 import { PassportModule } from '@nestjs/passport';
 import { ApiModule } from '@modules/api/api.module';
 import { WorkspaceModule } from '@modules/workspace/workspace.module';
+import { BullMQModule } from './modules/bullmq/bullmq.module';
+import { bullMqConfig } from './config/bull-mq.config';
+import { registerSubscribers } from '@modules/subscribers';
 
 @Module({
     imports: [
@@ -37,12 +40,20 @@ import { WorkspaceModule } from '@modules/workspace/workspace.module';
             useFactory: cacheConfig,
             isGlobal: true,
         }),
+
+        BullMQModule.forRootAsync({
+            imports: [ConfigModule],
+            useFactory: bullMqConfig,
+            inject: [ConfigService],
+        }),
+
         AuthModule,
         AuthConfigModule,
         UserModule,
         SentryModule.forRoot(),
         WorkspaceModule,
         ...StrategyModules,
+        ...registerSubscribers(),
         ApiModule,
     ],
     controllers: [],
