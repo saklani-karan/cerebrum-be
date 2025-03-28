@@ -10,7 +10,8 @@ import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import UserQueue from '@queue/user.queue';
-
+import { tryCatch } from '@utils/try-catch';
+import { throwException } from '@utils/exceptions';
 export const CREATE_USER_STRATEGY = 'create_user_strategy';
 
 @Injectable()
@@ -43,10 +44,9 @@ export class CreateUserStrategyImpl extends Transactional implements CreateUserS
                 adminId: user.id,
             });
 
-            try {
-                await this.queue.add('user-created', user);
-            } catch (error) {
-                throw error;
+            const [error] = await tryCatch(this.queue.add('user-created', user));
+            if (error) {
+                throwException(error);
             }
 
             return user;

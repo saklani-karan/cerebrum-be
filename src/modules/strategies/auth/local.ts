@@ -8,6 +8,7 @@ import { Strategy } from 'passport-local';
 import { EntityManager } from 'typeorm';
 import { SIGN_PASSWORD_STRATEGY } from '@modules/strategies/sign-password';
 import { SignPasswordStrategyInterface } from '@modules/strategies/sign-password/types';
+import { tryCatch } from '@utils/try-catch';
 
 export class LocalStrategy extends PassportStrategy(Strategy) {
     static provider: string = 'local';
@@ -24,14 +25,12 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
         return this.manager.transaction(async (txManager) => {
             const txAuthConfigService = this.authConfigService.withTransaction(txManager);
 
-            let authConfig: AuthConfig;
-            try {
-                authConfig = await txAuthConfigService.findByEmailAndProvider(
-                    email,
-                    LocalStrategy.provider,
-                );
-            } catch (err) {
-                throwException(ErrorTypes.FORBIDDEN, { message: err.message });
+            const [error, authConfig] = await tryCatch(
+                txAuthConfigService.findByEmailAndProvider(email, LocalStrategy.provider),
+            );
+
+            if (error) {
+                throwException(ErrorTypes.FORBIDDEN, { message: error.message });
             }
 
             const hashPassword = await this.signPasswordStrategy.sign(password);

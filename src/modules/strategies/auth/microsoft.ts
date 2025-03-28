@@ -7,10 +7,11 @@ import { UserService } from '@modules/user/user.service';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { User } from '@modules/user/user.entity';
-import { throwException, ErrorTypes } from '@utils/exceptions';
+import { throwException, ErrorTypes, Exception } from '@utils/exceptions';
 import { CREATE_USER_STRATEGY } from '../create-user';
 import { CreateUserStrategyInterface } from '../create-user/types';
-
+import { tryCatch } from '@utils/try-catch';
+import { AuthConfig } from '@modules/auth-config/auth-config.entity';
 export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
     static provider: string = 'microsoft';
     constructor(
@@ -31,48 +32,56 @@ export class MicrosoftStrategy extends PassportStrategy(Strategy, 'microsoft') {
     }
 
     async validate(accessToken: string, refreshToken: string, profile: any, done: Function) {
-        return this.manager.transaction(async (txManager) => {
-            const txUserService = this.userService.withTransaction(txManager);
-            const txAuthConfigService = this.authConfigService.withTransaction(txManager);
-            const txCreateUserStrategy = this.createUserStrategy.withTransaction(txManager);
-            const email = this.resolveEmail(profile);
-            const name = this.resolveName(profile);
-            const dpUrl = this.resolveDpUrl(profile);
+        return this.manager
+            .transaction(async (txManager) => {
+                const txUserService = this.userService.withTransaction(txManager);
+                const txAuthConfigService = this.authConfigService.withTransaction(txManager);
+                const txCreateUserStrategy = this.createUserStrategy.withTransaction(txManager);
+                const email = this.resolveEmail(profile);
+                const name = this.resolveName(profile);
+                const dpUrl = this.resolveDpUrl(profile);
 
-            let user: User;
-            try {
-                user = await txUserService.findByEmail(email);
-            } catch (err) {
-                if (err.type !== ErrorTypes.ENTITY_NOT_FOUND) {
-                    throwException(err);
+                let [error, user] = await tryCatch(txUserService.findByEmail(email));
+
+                if (error) {
+                    if (
+                        !(error instanceof Exception && error.type === ErrorTypes.ENTITY_NOT_FOUND)
+                    ) {
+                        throwException(error);
+                    }
+                    user = null;
                 }
-                user = null;
-            }
 
-            if (!user) {
-                user = await txCreateUserStrategy.exec({
-                    email,
-                    name,
-                    dpUrl,
-                });
-            } else {
-                await txUserService.update(user.id, {
-                    name,
-                    dpUrl,
-                });
-            }
+                if (!user) {
+                    user = await txCreateUserStrategy.exec({
+                        email,
+                        name,
+                        dpUrl,
+                    });
+                } else {
+                    await txUserService.update(user.id, {
+                        name,
+                        dpUrl,
+                    });
+                }
 
-            try {
-                await txAuthConfigService.upsertByUserId(user.id, MicrosoftStrategy.provider, {
-                    refreshToken,
-                    accessToken,
-                });
-            } catch (err) {
-                return done(err, null);
-            }
+                const authConfig: AuthConfig = await txAuthConfigService.upsertByUserId(
+                    user.id,
+                    MicrosoftStrategy.provider,
+                    {
+                        refreshToken,
+                        accessToken,
+                    },
+                );
 
-            return done(null, user);
-        });
+                return user;
+            })
+            .then((user) => {
+                return done(null, user);
+            })
+            .catch((error) => {
+                return done(error, null);
+            });
     }
 
     private resolveEmail(profile: any): string | null {

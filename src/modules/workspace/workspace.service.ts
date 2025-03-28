@@ -10,7 +10,7 @@ import { Request } from 'express';
 import { UserService } from '@modules/user/user.service';
 import { User } from '@modules/user/user.entity';
 import { UpdateWorkspace } from './types/update-workspace';
-
+import { tryCatch } from '@utils/try-catch';
 export class WorkspaceService extends BaseService<Workspace> {
     constructor(
         @InjectRepository(Workspace) repository: Repository<Workspace>,
@@ -44,11 +44,9 @@ export class WorkspaceService extends BaseService<Workspace> {
                 adminId: admin.id,
             });
 
-            let workspace: Workspace;
-            try {
-                workspace = await txRepo.save(workspaceDao);
-            } catch (err) {
-                throwException(ErrorTypes.DB_ERROR, { message: err.message });
+            const [error, workspace] = await tryCatch(txRepo.save(workspaceDao));
+            if (error) {
+                throwException(ErrorTypes.DB_ERROR, { message: error.message });
             }
 
             return workspace;
@@ -67,11 +65,9 @@ export class WorkspaceService extends BaseService<Workspace> {
                 workspace.name = name;
             }
 
-            let updatedWorkspace: Workspace;
-            try {
-                updatedWorkspace = await txRepo.save(workspace);
-            } catch (err) {
-                throwException(ErrorTypes.DB_ERROR, { message: err.message });
+            const [error, updatedWorkspace] = await tryCatch(txRepo.save(workspace));
+            if (error) {
+                throwException(ErrorTypes.DB_ERROR, { message: error.message });
             }
 
             return updatedWorkspace;

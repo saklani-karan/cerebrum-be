@@ -6,7 +6,7 @@ import { ListEntityResponse, RequestQueryFields, TransformedQuery } from '@utils
 import { Transactional } from '@utils/transaction';
 import { Request } from 'express';
 import { User } from '@modules/user/user.entity';
-
+import { tryCatch } from '@utils/try-catch';
 @Injectable()
 export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transactional {
     protected logger: Logger;
@@ -31,17 +31,18 @@ export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transac
             const repository: Repository<Entity> = transactionManager.withRepository(
                 this.repository,
             );
-            let entities: Entity[] = [];
-            try {
-                entities = await repository.find(options);
-            } catch (err) {
+
+            const [error, entities] = await tryCatch(repository.find(options));
+
+            if (error) {
                 this.logger.error(
                     `findAll: error on find on repository ${JSON.stringify({
-                        message: err.message,
+                        message: error.message,
                     })}`,
                 );
-                throwException(err);
+                throwException(error);
             }
+
             return entities;
         });
     }
@@ -53,16 +54,15 @@ export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transac
             const repository: Repository<Entity> = transactionManager.withRepository(
                 this.repository,
             );
-            let entity: Entity;
-            try {
-                entity = await repository.findOne(options);
-            } catch (err) {
+            const [error, entity] = await tryCatch(repository.findOne(options));
+
+            if (error) {
                 this.logger.error(
                     `findOne: error on findOne on repository ${JSON.stringify({
-                        message: err.message,
+                        message: error.message,
                     })}`,
                 );
-                throwException(err);
+                throwException(error);
             }
             return entity;
         });
@@ -147,16 +147,16 @@ export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transac
                     ...options,
                 };
             }
-            let entity: Entity;
-            try {
-                entity = await repository.findOne(findOneQuery);
-            } catch (err) {
+
+            const [error, entity] = await tryCatch(repository.findOne(findOneQuery));
+
+            if (error) {
                 this.logger.error(
                     `an error occured while fetching entity from DB: ${JSON.stringify({
-                        message: err.message,
+                        message: error.message,
                     })}`,
                 );
-                throwException(err as Error);
+                throwException(error as Error);
             }
 
             if (!entity || !entity?.id === id) {
@@ -177,23 +177,27 @@ export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transac
     create(entity: any, ...args: any[]): Promise<any>;
     async create(entity: DeepPartial<Entity> | Entity): Promise<Entity> {
         return this.runTransaction(async (transactionManager) => {
+            this.logger.log(`create: received request for creation`, entity, this.repository);
+
             const repository: Repository<Entity> = transactionManager.withRepository(
                 this.repository,
             );
-            this.logger.log(`create: received request for creation`, entity, this.repository);
+            const txService = this.withTransaction(transactionManager);
+
             const entityDao: Entity = repository.create(entity);
-            await this.isUnique(entityDao);
-            let savedEntity: Entity;
-            try {
-                savedEntity = await repository.save(entityDao);
-            } catch (err) {
+
+            await txService.isUnique(entityDao);
+
+            const [error, savedEntity] = await tryCatch(repository.save(entityDao));
+            if (error) {
                 this.logger.error(
                     `create: error creating entity, ${JSON.stringify({
-                        message: err.message,
+                        message: error.message,
                     })}`,
                 );
-                throwException(err as Error);
+                throwException(error as Error);
             }
+
             return savedEntity;
         });
     }
@@ -205,29 +209,22 @@ export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transac
             const repository: Repository<Entity> = transactionManager.withRepository(
                 this.repository,
             );
-            let entity: Entity;
-            try {
-                entity = await this.get(id);
-            } catch (err) {
-                this.logger.error(
-                    `error findOneBy: ${JSON.stringify({
-                        message: err.message,
-                    })}`,
-                );
-                throwException(err);
-            }
-            try {
-                await repository.remove(entity);
-            } catch (err) {
+            const txService = this.withTransaction(transactionManager);
+
+            const entity = await txService.get(id);
+
+            const [error, removedEntity] = await tryCatch(repository.remove(entity));
+
+            if (error) {
                 this.logger.error(
                     `remove: error while removing entity: ${JSON.stringify({
-                        message: err.message,
-                    })} `,
+                        message: error.message,
+                    })}`,
                 );
-                throwException(err as Error);
+                throwException(error as Error);
             }
 
-            return entity;
+            return removedEntity;
         });
     }
 
@@ -238,34 +235,27 @@ export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transac
             const repository: Repository<Entity> = transactionManager.withRepository(
                 this.repository,
             );
-            let entity: Entity;
-            try {
-                entity = await this.withTransaction(transactionManager).get(id);
-            } catch (err) {
-                this.logger.error(
-                    `error findOneBy: ${JSON.stringify({
-                        message: err.message,
-                    })}`,
-                );
-                throwException(err);
-            }
+
+            const txService = this.withTransaction(transactionManager);
+
+            const entity = await txService.get(id);
 
             const entityDao: Entity = repository.create({
                 ...entity,
                 ...update,
             });
-            await this.isUnique(entityDao);
 
-            let updatedResult: Entity;
-            try {
-                updatedResult = await repository.save(entityDao);
-            } catch (err) {
+            await txService.isUnique(entityDao);
+
+            const [error, updatedResult] = await tryCatch(repository.save(entityDao));
+
+            if (error) {
                 this.logger.error(
-                    `error update: ${JSON.stringify({
-                        message: err.message,
+                    `update: error while updating entity: ${JSON.stringify({
+                        message: error.message,
                     })}`,
                 );
-                throwException(err);
+                throwException(error as Error);
             }
 
             return updatedResult;
