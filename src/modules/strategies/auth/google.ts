@@ -7,10 +7,10 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { UserService } from '@modules/user/user.service';
 import { User } from '@modules/user/user.entity';
-import { throwException, ErrorTypes } from '@utils/exceptions';
+import { throwException, ErrorTypes, Exception } from '@utils/exceptions';
 import { CREATE_USER_STRATEGY } from '../create-user';
 import { CreateUserStrategyInterface } from '../create-user/types';
-
+import { tryCatch } from '@utils/try-catch';
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     static provider: string = 'google';
     constructor(
@@ -44,12 +44,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
                     throwException(ErrorTypes.INVALID_ARGUMENTS, { message: 'email not found' });
                 }
 
-                let user: User;
-                try {
-                    user = await txUserService.findByEmail(email);
-                } catch (err) {
-                    if (err.type !== ErrorTypes.ENTITY_NOT_FOUND) {
-                        throwException(err);
+                let [error, user] = await tryCatch(txUserService.findByEmail(email));
+
+                if (error) {
+                    if (
+                        !(error instanceof Exception && error.type === ErrorTypes.ENTITY_NOT_FOUND)
+                    ) {
+                        throwException(error);
                     }
                     user = null;
                 }
@@ -67,14 +68,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
                     });
                 }
 
-                try {
-                    await txAuthConfigService.upsertByUserId(user.id, GoogleStrategy.provider, {
-                        refreshToken,
-                        accessToken,
-                    });
-                } catch (err) {
-                    throwException(err);
-                }
+                await txAuthConfigService.upsertByUserId(user.id, GoogleStrategy.provider, {
+                    refreshToken,
+                    accessToken,
+                });
 
                 return user;
             })

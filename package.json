@@ -25,6 +25,7 @@
         "seed": "npm run build && node dist/seeder.js"
     },
     "dependencies": {
+        "@nestjs/bullmq": "^11.0.2",
         "@nestjs/cache-manager": "^3.0.0",
         "@nestjs/common": "^10.0.0",
         "@nestjs/config": "^4.0.1",
@@ -41,6 +42,7 @@
         "@types/jsonwebtoken": "^9.0.9",
         "axios": "^1.8.3",
         "bcrypt": "^5.1.1",
+        "bullmq": "^5.44.4",
         "cache-manager": "^6.4.1",
         "cache-manager-ioredis": "^2.1.0",
         "class-transformer": "^0.5.1",

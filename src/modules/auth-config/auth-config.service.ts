@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ErrorTypes, Exception, throwException } from '@utils/exceptions';
 import { EntityManager, Repository } from 'typeorm';
 import { AuthConfig, CredentialsConfig } from './auth-config.entity';
+import { tryCatch } from '@utils/try-catch';
 
 export class AuthConfigService extends BaseService<AuthConfig> {
     constructor(@InjectRepository(AuthConfig) repository: Repository<AuthConfig>) {
@@ -14,16 +15,17 @@ export class AuthConfigService extends BaseService<AuthConfig> {
         return this.runTransaction(async (manager: EntityManager) => {
             const txRepo = manager.withRepository(this.repository);
 
-            let config: AuthConfig;
-            try {
-                config = await txRepo.findOne({
+            const [error, config] = await tryCatch(
+                txRepo.findOne({
                     where: {
                         provider,
                         userId,
                     },
-                });
-            } catch (err) {
-                throwException(err);
+                }),
+            );
+
+            if (error) {
+                throwException(error);
             }
 
             if (!config) {
@@ -40,9 +42,8 @@ export class AuthConfigService extends BaseService<AuthConfig> {
         return this.runTransaction(async (manager: EntityManager) => {
             const txRepo = this.withTransaction(manager);
 
-            let config: AuthConfig;
-            try {
-                config = await txRepo.findOne({
+            const [error, config] = await tryCatch(
+                txRepo.findOne({
                     where: {
                         provider,
                         user: {
@@ -52,9 +53,11 @@ export class AuthConfigService extends BaseService<AuthConfig> {
                     relations: {
                         user: true,
                     },
-                });
-            } catch (err) {
-                throwException(err);
+                }),
+            );
+
+            if (error) {
+                throwException(error);
             }
 
             if (!config) {
@@ -74,14 +77,15 @@ export class AuthConfigService extends BaseService<AuthConfig> {
     ): Promise<AuthConfig> {
         return this.runTransaction(async (manager: EntityManager) => {
             const txService = this.withTransaction(manager);
-            let config: AuthConfig;
-            try {
-                config = await txService.findByUserIdAndProvider(userId, provider);
-            } catch (err) {
-                if (!(err instanceof Exception && err.type === ErrorTypes.ENTITY_NOT_FOUND)) {
-                    throwException(err);
+
+            const [error, config] = await tryCatch(
+                txService.findByUserIdAndProvider(userId, provider),
+            );
+
+            if (error) {
+                if (!(error instanceof Exception && error.type === ErrorTypes.ENTITY_NOT_FOUND)) {
+                    throwException(error);
                 }
-                config = null;
             }
 
             if (config) {
