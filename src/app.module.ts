@@ -15,6 +15,7 @@ import { WorkspaceModule } from '@modules/workspace/workspace.module';
 import { BullMQModule } from './modules/bullmq/bullmq.module';
 import { bullMqConfig } from './config/bull-mq.config';
 import { registerSubscribers } from '@modules/subscribers';
+import { UserWorkspaceModule } from '@modules/user-workspace/user-workspace.module';
 
 @Module({
     imports: [
@@ -51,6 +52,7 @@ import { registerSubscribers } from '@modules/subscribers';
         AuthConfigModule,
         UserModule,
         SentryModule.forRoot(),
+        UserWorkspaceModule,
         WorkspaceModule,
         ...StrategyModules,
         ...registerSubscribers(),
