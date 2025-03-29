@@ -5,7 +5,6 @@ import { User } from '@modules/user/user.entity';
 import { Transactional } from '@utils/transaction';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { UserService } from '@modules/user/user.service';
-import { WorkspaceService } from '@modules/workspace/workspace.service';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';

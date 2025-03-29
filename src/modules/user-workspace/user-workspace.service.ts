@@ -13,6 +13,7 @@ import { WorkspaceService } from '@modules/workspace/workspace.service';
 import { User } from '@modules/user/user.entity';
 import { CreateWithWorkspace } from './types/create-with-workspace';
 import { Workspace } from '@modules/workspace/workspace.entity';
+import { CreateUserWorkSpace } from './types/create-workspace';
 
 @Injectable()
 export class UserWorkspaceService extends Transactional {
@@ -29,7 +30,7 @@ export class UserWorkspaceService extends Transactional {
         super(manager);
     }
 
-    create(workspaceId: string | Workspace, userId?: string | User): Promise<UserWorkspace> {
+    create(request: CreateUserWorkSpace): Promise<UserWorkspace> {
         return this.runTransaction(async (transactionalEntityManager) => {
             const txRepo = transactionalEntityManager.withRepository(this.userWorkspaceRepository);
             const txUserService = this.userService.withTransaction(transactionalEntityManager);
@@ -37,26 +38,22 @@ export class UserWorkspaceService extends Transactional {
                 transactionalEntityManager,
             );
 
-            let user: User, workspace: Workspace;
+            const {
+                user: requestedUser,
+                userId,
+                workspace: requestedWorkspace,
+                workspaceId,
+            } = request;
 
-            if (userId) {
-                if (typeof userId === 'string') {
-                    user = await txUserService.get(userId);
-                } else {
-                    user = userId;
-                }
-            } else {
-                user = this.resolveUserFromRequest();
-            }
-
-            if (typeof workspaceId === 'string') {
-                workspace = await txWorkspaceService.get(workspaceId);
-            } else {
-                workspace = workspaceId;
-            }
+            let user: User = requestedUser ?? this.resolveUserFromRequest();
+            let workspace: Workspace = requestedWorkspace;
 
             if (!user) {
-                throwException(ErrorTypes.INVALID_ARGUMENTS, { message: 'User ID is required' });
+                user = await txUserService.get(userId);
+            }
+
+            if (!workspace) {
+                workspace = await txWorkspaceService.get(workspaceId);
             }
 
             const userWorkspaceDao = txRepo.create({
@@ -91,7 +88,10 @@ export class UserWorkspaceService extends Transactional {
 
             const workspace = await txWorkspaceService.create(workspaceRequest);
 
-            const userWorkspace = await txUserWorkspaceService.create(workspace, user);
+            const userWorkspace = await txUserWorkspaceService.create({
+                user,
+                workspace,
+            });
 
             return userWorkspace;
         });
