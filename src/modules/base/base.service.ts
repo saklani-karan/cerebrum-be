@@ -136,6 +136,10 @@ export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transac
                 this.repository,
             );
             this.logger.log(`get: received request with id=${id}`);
+            if (!id?.length) {
+                throwException(ErrorTypes.INVALID_ARGUMENTS, { message: 'ID is required' });
+            }
+
             let findOneQuery: FindOneOptions<Entity> = {
                 where: { id },
                 relations: this.defaultRelations as string[],

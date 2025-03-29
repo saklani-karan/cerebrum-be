@@ -1,11 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 import { CreateUserStrategyImpl, CREATE_USER_STRATEGY } from '.';
 import { UserModule } from '@modules/user/user.module';
-import { WorkspaceModule } from '@modules/workspace/workspace.module';
-
+import { UserWorkspaceModule } from '@modules/user-workspace/user-workspace.module';
 @Global()
 @Module({
-    imports: [UserModule, WorkspaceModule],
+    imports: [UserModule, UserWorkspaceModule],
     providers: [
         {
             provide: CREATE_USER_STRATEGY,
