@@ -16,7 +16,7 @@ import { BullMQModule } from './modules/bullmq/bullmq.module';
 import { bullMqConfig } from './config/bull-mq.config';
 import { registerSubscribers } from '@modules/subscribers';
 import { UserWorkspaceModule } from '@modules/user-workspace/user-workspace.module';
-
+import { IntegrationLibraryModule } from '@modules/integration-library/integration-library.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -57,6 +57,7 @@ import { UserWorkspaceModule } from '@modules/user-workspace/user-workspace.modu
         ...StrategyModules,
         ...registerSubscribers(),
         ApiModule,
+        IntegrationLibraryModule,
     ],
     controllers: [],
     providers: [],

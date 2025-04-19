@@ -2,6 +2,11 @@
 import { HttpException } from '@nestjs/common';
 import { StatusCodes } from 'http-status-codes';
 
+export type ValidationError = {
+    path: string;
+    errors: string[];
+};
+
 export type ExceptionProps = {
     message: string;
     code: StatusCodes;
@@ -9,6 +14,7 @@ export type ExceptionProps = {
     type?: string;
     ref?: string;
     name: string;
+    validationErrors?: ValidationError[];
 };
 
 export class Exception extends HttpException {
@@ -16,12 +22,14 @@ export class Exception extends HttpException {
     type: string | undefined;
     ref: string | undefined;
     name: string;
-    constructor({ message, code, data, type, ref, name }: ExceptionProps) {
+    validationErrors?: ValidationError[];
+    constructor({ message, code, data, type, ref, name, validationErrors }: ExceptionProps) {
         super(message, code);
         this.data = data;
         this.type = type;
         this.ref = ref;
         this.name = name;
+        this.validationErrors = validationErrors;
     }
 }
 
@@ -116,6 +124,7 @@ export type ThrowExceptionProps = {
     type?: string;
     data?: any;
     ref?: string;
+    validationErrors?: ValidationError[];
 };
 
 export function throwException(errorType: ErrorTypes, props: ThrowExceptionProps): void;
@@ -129,7 +138,7 @@ export function throwException(error: ErrorTypes | Error | Exception, props?: Th
             message: error.message,
         });
     }
-    const { message, type, data, ref } = props || {};
+    const { message, type, data, ref, validationErrors } = props || {};
     const config: {
         code: StatusCodes;
         name: string;
@@ -141,5 +150,6 @@ export function throwException(error: ErrorTypes | Error | Exception, props?: Th
         type: type ?? error,
         data,
         ref,
+        validationErrors,
     });
 }
