@@ -10,7 +10,7 @@ import { Redis } from 'ioredis';
 import { RedisStore } from 'connect-redis';
 import { UnhandledExceptionFilter } from './filters/unhandled-exception.filter';
 import { HttpExceptionFilter } from './filters/http-exceptions.filter';
-
+import { BaseExceptionFilter } from './filters/base-exception';
 config();
 
 export async function bootstrap(): Promise<void> {
@@ -37,7 +37,11 @@ export async function bootstrap(): Promise<void> {
             transformOptions: { enableImplicitConversion: true },
         }),
     );
-    app.useGlobalFilters(new UnhandledExceptionFilter(), new HttpExceptionFilter());
+    app.useGlobalFilters(
+        new UnhandledExceptionFilter(),
+        new HttpExceptionFilter(),
+        new BaseExceptionFilter(),
+    );
     app.use(json({ limit: '50mb' }));
 
     const redisClient = new Redis({

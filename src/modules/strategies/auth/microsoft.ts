@@ -6,7 +6,6 @@ import { AuthConfigService } from '@modules/auth-config/auth-config.service';
 import { UserService } from '@modules/user/user.service';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
-import { User } from '@modules/user/user.entity';
 import { throwException, ErrorTypes, Exception } from '@utils/exceptions';
 import { CREATE_USER_STRATEGY } from '../create-user';
 import { CreateUserStrategyInterface } from '../create-user/types';
