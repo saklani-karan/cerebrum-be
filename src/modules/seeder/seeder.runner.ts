@@ -24,7 +24,7 @@ export class SeederRunner extends Transactional {
             for (const seeder of seeders) {
                 this.logger.log(`Running seeder ${seeder.constructor.name}`);
                 try {
-                    await seeder.seed();
+                    await seeder.run();
                 } catch (error) {
                     this.logger.error(`Seeder ${seeder.constructor.name} failed`, error);
                 }
