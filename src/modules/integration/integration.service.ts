@@ -1,13 +1,13 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Integration } from './integration.entity';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Transactional } from '@utils/transaction';
 import { CreateIntegration } from './types/create-integration';
 import { UpdateIntegration } from './types/update-integration';
 import { throwException, ErrorTypes } from '@utils/exceptions';
 import { Injectable, Logger } from '@nestjs/common';
 import { tryCatch } from '@utils/try-catch';
-
+import { UpdateManyIntegrationRequest } from './types/update-many-integrations';
 @Injectable()
 export class IntegrationService extends Transactional {
     protected readonly logger: Logger;
@@ -109,5 +109,69 @@ export class IntegrationService extends Transactional {
         }
 
         return;
+    }
+
+    async findByKeys(keys: string[]): Promise<Integration[]> {
+        const [error, integrations] = await tryCatch(
+            this.repository.find({ where: { key: In(keys) } }),
+        );
+        if (error) {
+            throwException(ErrorTypes.DB_ERROR, { message: error.message });
+        }
+        return integrations;
+    }
+
+    async createMany(request: CreateIntegration[]) {
+        return this.runTransaction(async (manager) => {
+            const txRepository = manager.withRepository(this.repository);
+            const txService = this.withTransaction(manager);
+
+            const integrations = await txService.findByKeys(
+                request.map((integration) => integration.key),
+            );
+
+            const toCreate = request.filter(
+                (integration) => !integrations.some((i) => i.key === integration.key),
+            );
+
+            const [error, createdIntegrations] = await tryCatch(txRepository.save(toCreate));
+            if (error) {
+                throwException(ErrorTypes.DB_ERROR, { message: error.message });
+            }
+
+            return [...createdIntegrations, ...integrations];
+        });
+    }
+
+    async updateMany(request: UpdateManyIntegrationRequest) {
+        return this.runTransaction(async (manager) => {
+            const txRepository = manager.withRepository(this.repository);
+            const txService = this.withTransaction(manager);
+
+            const integrations = await txService.findByKeys(Object.keys(request));
+
+            for (const integration of integrations) {
+                const update = request[integration.key];
+                if (!update) {
+                    continue;
+                }
+
+                if (update.name) {
+                    integration.name = update.name;
+                }
+                if (update.description) {
+                    integration.description = update.description;
+                }
+                if (update.iconUrl) {
+                    integration.iconUrl = update.iconUrl;
+                }
+            }
+
+            const [error, updatedIntegrations] = await tryCatch(txRepository.save(integrations));
+            if (error) {
+                throwException(ErrorTypes.DB_ERROR, { message: error.message });
+            }
+            return updatedIntegrations;
+        });
     }
 }

@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Transactional } from '@utils/transaction';
 import { Tool } from './tool.entity';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IntegrationService } from '@modules/integration/integration.service';
 import { CreateTool } from './types/create-tool';
 import { throwException, ErrorTypes } from '@utils/exceptions';
 import { tryCatch } from '@utils/try-catch';
 import { UpdateTool } from './types/update-tool';
-
+import { UpdateManyToolsRequest } from './types/update-many-tools';
 @Injectable()
 export class ToolService extends Transactional {
     protected readonly logger: Logger;
@@ -134,6 +134,87 @@ export class ToolService extends Transactional {
             }
 
             return deletedTool;
+        });
+    }
+
+    async findAllByKeyAndAction(key: string[], action: string[]): Promise<Tool[]> {
+        return this.runTransaction(async (manager) => {
+            const txRepository = manager.withRepository(this.repository);
+
+            const [error, tools] = await tryCatch(
+                txRepository.find({ where: { action: In(action), integrationKey: In(key) } }),
+            );
+
+            if (error) {
+                throwException(ErrorTypes.DB_ERROR, { message: error.message });
+            }
+
+            return tools;
+        });
+    }
+
+    async createMany(request: CreateTool[]): Promise<Tool[]> {
+        return this.runTransaction(async (manager) => {
+            const txRepository = manager.withRepository(this.repository);
+            const txService = this.withTransaction(manager);
+
+            const tools = await txService.findAllByKeyAndAction(
+                request.map((tool) => tool.integrationKey),
+                request.map((tool) => tool.action),
+            );
+
+            const toCreate = request.filter(
+                (tool) =>
+                    !tools.some(
+                        (t) => t.action === tool.action && t.integrationKey === tool.integrationKey,
+                    ),
+            );
+
+            const [error, createdTools] = await tryCatch(txRepository.save(toCreate));
+            if (error) {
+                throwException(ErrorTypes.DB_ERROR, { message: error.message });
+            }
+
+            return [...createdTools, ...tools];
+        });
+    }
+
+    async updateMany(request: UpdateManyToolsRequest): Promise<Tool[]> {
+        return this.runTransaction(async (manager) => {
+            const txRepository = manager.withRepository(this.repository);
+            const txService = this.withTransaction(manager);
+
+            const tools = await txService.findAllByKeyAndAction(
+                Object.keys(request).map((key) => key.split('-')[0]),
+                Object.keys(request).map((key) => key.split('-')[1]),
+            );
+
+            for (const tool of tools) {
+                const update = request[`${tool.integrationKey}-${tool.action}`];
+                if (!update) {
+                    continue;
+                }
+
+                if (update.name) {
+                    tool.name = update.name;
+                }
+                if (update.description) {
+                    tool.description = update.description;
+                }
+                if (update.userParams) {
+                    tool.userParams = update.userParams;
+                }
+                if (update.workflowParams) {
+                    tool.workflowParams = update.workflowParams;
+                }
+            }
+
+            const [error, updatedTools] = await tryCatch(txRepository.save(tools));
+            if (error) {
+                throwException(ErrorTypes.DB_ERROR, { message: error.message });
+            }
+
+            return updatedTools;
         });
     }
 }

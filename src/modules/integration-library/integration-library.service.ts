@@ -1,12 +1,12 @@
 import { Injectable, Scope } from '@nestjs/common';
-import { IntegrationFactory } from './factory';
+import { ToolFactory } from './integration-tool.factory';
 
 @Injectable({ scope: Scope.REQUEST })
 export class IntegrationLibraryService {
-    constructor(private readonly integrationFactory: IntegrationFactory) {}
+    constructor(private readonly toolFactory: ToolFactory) {}
 
-    async execute(key: string, action: string, params: any) {
-        await this.integrationFactory.createIntegration(key);
-        return this.integrationFactory.execute(action, params);
+    async execute(integrationKey: string, toolKey: string, params: any) {
+        await this.toolFactory.resolveTool(integrationKey, toolKey);
+        return this.toolFactory.execute(params);
     }
 }
