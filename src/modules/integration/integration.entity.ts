@@ -12,5 +12,5 @@ export class Integration {
     description: string;
 
     @Column({ type: 'text', nullable: true })
-    iconUrl: string;
+    iconUrl?: string;
 }

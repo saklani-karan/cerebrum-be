@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class UpdateIntegration {
     @IsString()
@@ -10,5 +10,6 @@ export class UpdateIntegration {
     description: string;
 
     @IsUrl()
-    iconUrl: string;
+    @IsOptional()
+    iconUrl?: string;
 }

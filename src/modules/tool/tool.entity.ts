@@ -11,7 +11,7 @@ export class Tool {
 
     @ManyToOne(() => Integration)
     @JoinColumn({ name: 'integration_key' })
-    integration: Integration;
+    integration?: Integration;
 
     @Column()
     name: string;

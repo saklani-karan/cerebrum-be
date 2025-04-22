@@ -1,8 +1,5 @@
-import { ErrorTypes, ValidationError } from '@utils/exceptions';
-import { throwException } from '@utils/exceptions';
+import { z } from 'zod';
 import { IntegrationMetadata } from './integration';
-import { z, ZodError } from 'zod';
-
 export type infer<T extends z.ZodType<any, any, any>> = z.infer<T>;
 
 export interface ToolDefinitionMetadata {
@@ -16,6 +13,42 @@ export interface DefineSchemaOptions<Schema extends z.ZodType<any, any, any>> {
     name: string;
     description: string;
     schema: Schema;
+    key: string;
+}
+
+export class IntegrationReference {
+    private static INTEGRATION_REFERENCE_KEY: symbol = Symbol('integration:reference');
+
+    static define(integrationResolver: () => any) {
+        return (target: any, propertyKey: string | symbol) => {
+            console.log('IntegrationReference', target, propertyKey);
+            const integration = integrationResolver();
+
+            const integrationDefinition = IntegrationMetadata.retrieve(integration);
+            if (!integrationDefinition) {
+                throw new Error(
+                    `Integration not found on target ${target} and property ${propertyKey.toString()}`,
+                );
+            }
+
+            return Reflect.defineMetadata(
+                IntegrationReference.INTEGRATION_REFERENCE_KEY,
+                integrationDefinition.key,
+                target.constructor,
+            );
+        };
+    }
+
+    static retrieve(target: any): string {
+        const integrationReference = Reflect.getMetadata(
+            IntegrationReference.INTEGRATION_REFERENCE_KEY,
+            target,
+        );
+        if (!integrationReference) {
+            throw new Error(`Integration reference not found on target ${target}`);
+        }
+        return integrationReference;
+    }
 }
 
 export class ToolMetadata {
@@ -25,76 +58,25 @@ export class ToolMetadata {
         name,
         description,
         schema,
+        key,
     }: DefineSchemaOptions<Schema>) {
-        return <T extends (arg: z.infer<Schema>) => void>(
-            target: any,
-            propertyKey: string | symbol,
-            descriptor: TypedPropertyDescriptor<T>,
-        ) => {
+        return (target: any) => {
             const definition: ToolDefinitionMetadata = {
                 description,
                 params: schema,
                 name,
-                key: propertyKey as string,
+                key,
             };
-            const originalMethod = descriptor.value;
 
-            descriptor.value = function (this: any, params: any) {
-                const validatedParams: z.infer<Schema> = ToolMetadata.validateParams(
-                    params,
-                    schema,
-                );
-                return originalMethod.call(this, validatedParams);
-            } as any;
-
-            const toolDefinitions: ToolDefinitionMetadata[] =
-                Reflect.getMetadata(ToolMetadata.TOOL_DEFINITION_KEY, target) || [];
-
-            toolDefinitions.push({
-                ...definition,
-            });
-
-            return Reflect.defineMetadata(
-                ToolMetadata.TOOL_DEFINITION_KEY,
-                toolDefinitions,
-                target,
-            );
+            return Reflect.defineMetadata(ToolMetadata.TOOL_DEFINITION_KEY, definition, target);
         };
     }
 
-    static retrieve(target: any): ToolDefinitionMetadata[] {
-        return Reflect.getMetadata(ToolMetadata.TOOL_DEFINITION_KEY, target);
-    }
-
-    private static validateParams<
-        Input extends Record<string, any>,
-        Output extends Record<string, any>,
-    >(params: Input, schema: z.ZodSchema<Output>): Output {
-        let validatedParams: Output;
-
-        try {
-            validatedParams = schema.parse(params);
-        } catch (error) {
-            if (error instanceof ZodError) {
-                throwException(ErrorTypes.INVALID_ARGUMENTS, {
-                    message: 'Invalid parameters received from request',
-                    validationErrors: ToolMetadata.transformValidationErrors(error),
-                });
-            }
-            throw error;
+    static retrieve(target: any): ToolDefinitionMetadata {
+        const toolDefinitions = Reflect.getMetadata(ToolMetadata.TOOL_DEFINITION_KEY, target);
+        if (!toolDefinitions) {
+            throw new Error(`Tool definitions not found on target ${target}`);
         }
-
-        return validatedParams;
-    }
-
-    private static transformValidationErrors(error: ZodError): ValidationError[] {
-        const validationErrors: ValidationError[] = [];
-        error.errors.forEach((error) => {
-            validationErrors.push({
-                path: error.path.join('.'),
-                errors: [error.message],
-            });
-        });
-        return validationErrors;
+        return toolDefinitions;
     }
 }
