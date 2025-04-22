@@ -17,6 +17,9 @@ import { bullMqConfig } from './config/bull-mq.config';
 import { registerSubscribers } from '@modules/subscribers';
 import { UserWorkspaceModule } from '@modules/user-workspace/user-workspace.module';
 import { IntegrationLibraryModule } from '@modules/integration-library/integration-library.module';
+import { SeederModule } from '@modules/seeder/seeder.module';
+import { ToolModule } from '@modules/tool/tool.module';
+import { IntegrationModule } from '@modules/integration/integration.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -58,6 +61,9 @@ import { IntegrationLibraryModule } from '@modules/integration-library/integrati
         ...registerSubscribers(),
         ApiModule,
         IntegrationLibraryModule,
+        ToolModule,
+        IntegrationModule,
+        SeederModule,
     ],
     controllers: [],
     providers: [],
