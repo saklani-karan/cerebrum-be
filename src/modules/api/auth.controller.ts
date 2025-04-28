@@ -14,7 +14,7 @@ export class AuthController {
         private readonly signUpStrategy: SignUpStrategyInterface,
     ) {}
 
-    @IsPublic()
+    @IsPublic.set()
     @Post('/login')
     @UseGuards(AuthGuard(LocalStrategy.provider))
     login() {

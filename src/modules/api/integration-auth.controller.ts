@@ -23,7 +23,7 @@ export class IntegrationAuthController {
         return this.handleRedirectStrategy.exec({ integrationKey });
     }
 
-    @IsPublic()
+    @IsPublic.set()
     @Get(':integration_key/callback')
     async callback(@Param('integration_key') integrationKey: string) {
         return this.handleCallbackStrategy.exec({ integrationKey });
