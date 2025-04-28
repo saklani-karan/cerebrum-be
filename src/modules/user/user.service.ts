@@ -6,7 +6,7 @@ import { User } from './user.entity';
 import { tryCatch } from '@utils/try-catch';
 export class UserService extends BaseService<User> {
     constructor(@InjectRepository(User) repository: Repository<User>) {
-        super(repository, 'user');
+        super(repository);
     }
 
     findByEmail(email: string): Promise<User> {

@@ -20,11 +20,16 @@ import { IntegrationLibraryModule } from '@modules/integration-library/integrati
 import { SeederModule } from '@modules/seeder/seeder.module';
 import { ToolModule } from '@modules/tool/tool.module';
 import { IntegrationModule } from '@modules/integration/integration.module';
+import config from './config';
+import { HttpModule } from '@modules/http/http.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AppAuthenticationGuard } from '@guards/authentication';
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: '.env',
+            load: [config],
         }),
 
         PassportModule.register({
@@ -50,7 +55,7 @@ import { IntegrationModule } from '@modules/integration/integration.module';
             useFactory: bullMqConfig,
             inject: [ConfigService],
         }),
-
+        HttpModule,
         AuthModule,
         AuthConfigModule,
         UserModule,
@@ -66,6 +71,11 @@ import { IntegrationModule } from '@modules/integration/integration.module';
         SeederModule,
     ],
     controllers: [],
-    providers: [],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: AppAuthenticationGuard,
+        },
+    ],
 })
 export class AppModule {}

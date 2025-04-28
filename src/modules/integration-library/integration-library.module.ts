@@ -1,12 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ToolFactory } from './integration-tool.factory';
-import { IntegrationLibraryService } from './integration-library.service';
-import { IntegrationLibraryController } from './integration-library.controller';
+import { ToolFactory, IntegrationFactory } from './integration-tool.factory';
 import { injectProviders } from './directory-scanner';
 @Module({
     imports: [],
-    providers: [...injectProviders(), ToolFactory, IntegrationLibraryService],
-    exports: [ToolFactory, IntegrationLibraryService],
-    controllers: [IntegrationLibraryController],
+    providers: [...injectProviders(), ToolFactory, IntegrationFactory],
+    exports: [ToolFactory, IntegrationFactory],
 })
 export class IntegrationLibraryModule {}

@@ -16,12 +16,9 @@ export class BaseService<Entity extends BaseEntity = BaseEntity> extends Transac
     protected isTransactional_ = false;
     protected request?: Request = null;
 
-    protected constructor(
-        protected readonly repository: Repository<Entity>,
-        protected readonly serviceName: string,
-    ) {
+    protected constructor(protected readonly repository: Repository<Entity>) {
         super(repository.manager);
-        this.logger = new Logger(`${serviceName}`);
+        this.logger = new Logger(this.constructor.name);
     }
 
     findAll(options?: FindManyOptions<Entity>): Promise<Entity[]>;
