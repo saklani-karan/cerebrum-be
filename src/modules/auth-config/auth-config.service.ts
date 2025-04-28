@@ -8,7 +8,7 @@ import { tryCatch } from '@utils/try-catch';
 
 export class AuthConfigService extends BaseService<AuthConfig> {
     constructor(@InjectRepository(AuthConfig) repository: Repository<AuthConfig>) {
-        super(repository, 'auth_config');
+        super(repository);
     }
 
     findByUserIdAndProvider(userId: string, provider: string): Promise<AuthConfig> {

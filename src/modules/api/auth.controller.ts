@@ -1,3 +1,4 @@
+import { IsPublic } from '@decorators/authentication';
 import { AuthService } from '@modules/auth/auth.service';
 import { LocalStrategy } from '@modules/strategies/auth/local';
 import { SIGN_UP_STRATEGY } from '@modules/strategies/sign-up';
@@ -13,6 +14,7 @@ export class AuthController {
         private readonly signUpStrategy: SignUpStrategyInterface,
     ) {}
 
+    @IsPublic()
     @Post('/login')
     @UseGuards(AuthGuard(LocalStrategy.provider))
     login() {

@@ -31,7 +31,8 @@
 			"@interfaces/*": ["src/interfaces/*"],
 			"@strategies/*": ["src/strategies/*"],
 			"@seed-data/*": ["src/seed-data/*"],
-			"@queue/*": ["src/queue/*"]
+			"@queue/*": ["src/queue/*"],
+			"@types/*": ["src/types/*"],
 		}
 	}
 }
