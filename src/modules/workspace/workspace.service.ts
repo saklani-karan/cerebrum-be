@@ -17,7 +17,7 @@ export class WorkspaceService extends BaseService<Workspace> {
         private readonly userService: UserService,
         @Inject(REQUEST) protected readonly request?: Request,
     ) {
-        super(repository, 'workspace');
+        super(repository);
     }
 
     create(request: CreateWorkspace): Promise<Workspace> {

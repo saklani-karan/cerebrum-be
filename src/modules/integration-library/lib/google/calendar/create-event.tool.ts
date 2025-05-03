@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { GoogleCalendarAuthenticationCredentials } from './types';
 import { ToolDefinitionTemplate } from '@modules/integration-library/types/tool';
-import GoogleCalendarIntegration from './integration';
-import { IntegrationReference, ToolMetadata } from '../../decorators';
+import GoogleCalendarIntegration from './calendar.integration';
+import { IntegrationReference, ToolMetadata } from '../../../decorators';
+import { GoogleAuthenticationCredentials } from '../types';
 
 export const CreateEventSchema = z.object({
     title: z.string(),
@@ -23,7 +23,7 @@ type CreateEventOutput = z.infer<typeof CreateEventSchema>;
 export default class CreateEventTool extends ToolDefinitionTemplate<
     CreateEventInput,
     CreateEventOutput,
-    GoogleCalendarAuthenticationCredentials
+    GoogleAuthenticationCredentials
 > {
     @IntegrationReference.define(() => GoogleCalendarIntegration)
     protected integration: GoogleCalendarIntegration;

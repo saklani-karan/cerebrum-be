@@ -19,7 +19,7 @@ export class IntegrationService extends Transactional {
         this.logger = new Logger(this.constructor.name);
     }
 
-    async retrieve(key: string) {
+    async retrieve(key: string): Promise<Integration> {
         return this.runTransaction(async (manager) => {
             const txRepository = manager.withRepository(this.repository);
 
@@ -27,6 +27,11 @@ export class IntegrationService extends Transactional {
             if (error) {
                 throwException(ErrorTypes.ENTITY_NOT_FOUND, { message: error.message });
             }
+
+            if (!integration) {
+                throwException(ErrorTypes.ENTITY_NOT_FOUND, { message: 'Integration not found' });
+            }
+
             return integration;
         });
     }
