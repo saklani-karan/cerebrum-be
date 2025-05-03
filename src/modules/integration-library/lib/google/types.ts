@@ -1,24 +1,23 @@
 import { IntegrationAuthenticationCredentials } from '@modules/integration-library/types/integration';
 import { Request } from 'express';
 
-export interface GoogleCalendarAuthenticationCredentials
-    extends IntegrationAuthenticationCredentials {
+export interface GoogleAuthenticationCredentials extends IntegrationAuthenticationCredentials {
     accessToken: string;
     refreshToken: string;
     tokenType: string;
     expiresIn: number;
 }
 
-export class GoogleCalendarSession {
+export class GoogleSession {
     userId: string;
 
-    static fromRedirectRequest(request: Request): GoogleCalendarSession {
-        const authSession = new GoogleCalendarSession();
+    static fromRedirectRequest(request: Request): GoogleSession {
+        const authSession = new GoogleSession();
         authSession.userId = request.user.id;
         return authSession;
     }
 
-    static fromCallbackRequest(request: Request): GoogleCalendarSession {
+    static fromCallbackRequest(request: Request): GoogleSession {
         const { state } = request.query;
         const authSession = JSON.parse(state as string);
         return authSession;

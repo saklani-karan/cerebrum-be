@@ -1,6 +1,5 @@
 import { IntegrationMetadata } from '../../decorators';
 import { CallbackResponse, IntegrationInterface } from '../../types/integration';
-import { GoogleCalendarAuthenticationCredentials } from './types';
 import { Inject, Injectable, Scope, Logger } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Request } from 'express';
@@ -10,33 +9,31 @@ import {
     IntegrationCredentialsType,
     OAuth2Credentials,
 } from '@modules/integration-auth/integration-auth.entity';
-import { GoogleCalendarSession, GoogleTokenResponse, GoogleUser } from './types';
+import {
+    GoogleSession,
+    GoogleTokenResponse,
+    GoogleUser,
+    GoogleAuthenticationCredentials,
+} from './types';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { ErrorTypes, throwException } from '@utils/exceptions';
 import { AxiosResponse } from 'axios';
 import { tryCatch } from '@utils/try-catch';
 
-@IntegrationMetadata.define({
-    name: 'Google Calendar',
-    description: 'Integration for creating and managing Google Calendar events',
-    key: 'google_calendar',
-})
-@Injectable({ scope: Scope.REQUEST })
-export default class GoogleCalendarIntegration
-    implements IntegrationInterface<GoogleCalendarAuthenticationCredentials>
+export default class GoogleIntegration
+    implements IntegrationInterface<GoogleAuthenticationCredentials>
 {
     private readonly logger: Logger;
-
     constructor(
-        @Inject(REQUEST) private readonly request: Request,
-        private readonly configService: ConfigService,
-        private readonly httpService: HttpService,
+        protected readonly request: Request,
+        protected readonly configService: ConfigService,
+        protected readonly httpService: HttpService,
     ) {
         this.logger = new Logger(this.constructor.name);
     }
 
-    async authenticate(): Promise<GoogleCalendarAuthenticationCredentials> {
+    async authenticate(): Promise<GoogleAuthenticationCredentials> {
         return {
             accessToken: 'accessToken',
             refreshToken: 'refreshToken',
@@ -47,13 +44,14 @@ export default class GoogleCalendarIntegration
     }
 
     async redirect(finalRedirectUrl: string): Promise<string> {
-        const integrationAuthSession = GoogleCalendarSession.fromRedirectRequest(this.request);
+        const integrationAuthSession = GoogleSession.fromRedirectRequest(this.request);
         const config: GoogleIntegrationConfig = this.configService.getOrThrow('integration.google');
         const scope = config.scopes.calendar.join(' ');
 
         const params = new URLSearchParams({
             client_id: config.clientId,
             response_type: 'code',
+            access_type: 'offline',
             scope,
             state: JSON.stringify(integrationAuthSession),
             redirect_uri: finalRedirectUrl,
@@ -143,12 +141,12 @@ export default class GoogleCalendarIntegration
 
     private retrieveCodeAndStateFromRequest(): {
         code: string;
-        session: GoogleCalendarSession;
+        session: GoogleSession;
     } {
         const { code } = this.request.query;
         return {
             code: code as string,
-            session: GoogleCalendarSession.fromCallbackRequest(this.request),
+            session: GoogleSession.fromCallbackRequest(this.request),
         };
     }
 }
