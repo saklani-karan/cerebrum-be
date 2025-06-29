@@ -212,8 +212,10 @@ export default class IntegrationAndToolSeeder extends AbstractSeederService {
         integrationMap: Map<string, Integration>,
     ) {
         const { key, name, description } = systemIntegration;
-        this.logger.log(`determineActionForIntegration: Integration ${key} not found, creating`);
         if (!integrationMap.has(key)) {
+            this.logger.log(
+                `determineActionForIntegration: Integration ${key} not found, creating`,
+            );
             toCreate.push({
                 key,
                 name,

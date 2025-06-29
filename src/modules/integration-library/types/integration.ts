@@ -1,6 +1,7 @@
 import { IntegrationCredentials } from '@modules/integration-auth/integration-auth.entity';
 
 export interface IntegrationAuthenticationCredentials {
+    identifier: string;
     expirationAt: Date;
 }
 

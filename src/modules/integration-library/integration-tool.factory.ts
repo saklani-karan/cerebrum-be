@@ -7,6 +7,7 @@ import {
     buildIntegrationInjectionToken,
 } from './types/integration';
 import { Request } from 'express';
+
 @Injectable({ scope: Scope.REQUEST })
 export class ToolFactory {
     private tool: ToolDefinitionTemplate;
