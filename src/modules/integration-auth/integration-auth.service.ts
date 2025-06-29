@@ -1,9 +1,8 @@
 import { BaseService } from '@modules/base/base.service';
 import { IntegrationAuth } from './integration-auth.entity';
-import { Inject, Injectable, Scope } from '@nestjs/common';
+import { Injectable, Scope } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IntegrationFactory } from '@modules/integration-library/integration-tool.factory';
 import { tryCatch } from '@utils/try-catch';
 import { ErrorTypes, throwException } from '@utils/exceptions';
 

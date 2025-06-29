@@ -2,6 +2,7 @@ import { IntegrationAuthenticationCredentials } from '@modules/integration-libra
 import { Request } from 'express';
 
 export interface GoogleAuthenticationCredentials extends IntegrationAuthenticationCredentials {
+    identifier: string;
     accessToken: string;
     refreshToken: string;
     tokenType: string;

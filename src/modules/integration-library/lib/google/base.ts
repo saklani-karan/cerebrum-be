@@ -1,7 +1,5 @@
-import { IntegrationMetadata } from '../../decorators';
 import { CallbackResponse, IntegrationInterface } from '../../types/integration';
-import { Inject, Injectable, Scope, Logger } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
+import { Injectable, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { GoogleIntegrationConfig } from '@config/integration/google';
@@ -35,6 +33,7 @@ export default class GoogleIntegration
 
     async authenticate(): Promise<GoogleAuthenticationCredentials> {
         return {
+            identifier: 'identifier',
             accessToken: 'accessToken',
             refreshToken: 'refreshToken',
             tokenType: 'tokenType',
