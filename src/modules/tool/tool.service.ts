@@ -9,8 +9,9 @@ import { throwException, ErrorTypes } from '@utils/exceptions';
 import { tryCatch } from '@utils/try-catch';
 import { UpdateTool } from './types/update-tool';
 import { UpdateManyToolsRequest } from './types/update-many-tools';
+import { integrationToolSerializerDeserializer } from '@utils/serializers/integration-tool';
 @Injectable()
-export class ToolService extends Transactional {
+export class ToolService extends Transactional {    
     protected readonly logger: Logger;
     constructor(
         @InjectRepository(Tool)
@@ -27,8 +28,7 @@ export class ToolService extends Transactional {
             const txService = this.withTransaction(manager);
             const txIntegrationService = this.integrationService.withTransaction(manager);
 
-            const { name, description, action, userParams, workflowParams, integrationKey } =
-                request;
+            const { name, description, action, params, integrationKey } = request;
 
             const integration = await txIntegrationService.retrieve(integrationKey);
 
@@ -36,8 +36,7 @@ export class ToolService extends Transactional {
                 name,
                 description,
                 action,
-                userParams,
-                workflowParams,
+                params: params,
                 integrationKey: integration.key,
             });
 
@@ -93,7 +92,7 @@ export class ToolService extends Transactional {
             const txService = this.withTransaction(manager);
             const txIntegrationService = this.integrationService.withTransaction(manager);
 
-            const { name, description, userParams, workflowParams } = request;
+            const { name, description, params } = request;
 
             const tool = await txService.retrieve(action, integrationKey);
 
@@ -105,12 +104,8 @@ export class ToolService extends Transactional {
                 tool.description = description;
             }
 
-            if (userParams) {
-                tool.userParams = userParams;
-            }
-
-            if (workflowParams) {
-                tool.workflowParams = workflowParams;
+            if (params) {
+                tool.params = params;
             }
 
             const [error, updatedTool] = await tryCatch(txRepository.save(tool));
@@ -139,6 +134,9 @@ export class ToolService extends Transactional {
 
     async findAllByKeyAndAction(key: string[], action: string[]): Promise<Tool[]> {
         return this.runTransaction(async (manager) => {
+            this.logger.log(
+                `findAllByKeyAction: searching for key ${JSON.stringify(key)} and action ${JSON.stringify(action)}`,
+            );
             const txRepository = manager.withRepository(this.repository);
 
             const [error, tools] = await tryCatch(
@@ -181,16 +179,34 @@ export class ToolService extends Transactional {
 
     async updateMany(request: UpdateManyToolsRequest): Promise<Tool[]> {
         return this.runTransaction(async (manager) => {
+            this.logger.log('updateMany: received request');
+            this.logger.debug(`updateMany: request received ${JSON.stringify(request)}`);
+
             const txRepository = manager.withRepository(this.repository);
             const txService = this.withTransaction(manager);
 
+            const deserializedToolKeys = Object.keys(request).map((value) => {
+                return integrationToolSerializerDeserializer.deserialize(value);
+            });
+
             const tools = await txService.findAllByKeyAndAction(
-                Object.keys(request).map((key) => key.split('-')[0]),
-                Object.keys(request).map((key) => key.split('-')[1]),
+                deserializedToolKeys.map(
+                    (deserializedToolKey) => deserializedToolKey.integrationKey,
+                ),
+                deserializedToolKeys.map((deserializedToolKey) => deserializedToolKey.action),
             );
+            this.logger.log(`updateMany: found ${tools.length} tools`);
 
             for (const tool of tools) {
-                const update = request[`${tool.integrationKey}-${tool.action}`];
+                const searchKey = integrationToolSerializerDeserializer.serialize({
+                    integrationKey: tool.integrationKey,
+                    action: tool.action,
+                });
+                const update = request[searchKey];
+                this.logger.debug(
+                    `updateMany: starting with tool ${tool.action} and updating ${JSON.stringify(update)}`,
+                );
+
                 if (!update) {
                     continue;
                 }
@@ -201,11 +217,8 @@ export class ToolService extends Transactional {
                 if (update.description) {
                     tool.description = update.description;
                 }
-                if (update.userParams) {
-                    tool.userParams = update.userParams;
-                }
-                if (update.workflowParams) {
-                    tool.workflowParams = update.workflowParams;
+                if (update.params) {
+                    tool.params = update.params;
                 }
             }
 

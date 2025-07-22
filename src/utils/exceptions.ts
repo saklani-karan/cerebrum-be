@@ -49,6 +49,7 @@ export enum ErrorTypes {
     OPERATION_DISABLED = 'OPERATION_DISABLED',
     PREV_STEP_PENDING = 'PREV_STEP_PENDING',
     CONFLICT = 'CONFLICT',
+    TIMEOUT = 'TIMEOUT',
 }
 
 export const errorConfiguration: {
@@ -116,6 +117,10 @@ export const errorConfiguration: {
     [ErrorTypes.FORBIDDEN]: {
         code: StatusCodes.FORBIDDEN,
         name: 'Forbidden',
+    },
+    [ErrorTypes.TIMEOUT]: {
+        code: StatusCodes.REQUEST_TIMEOUT,
+        name: 'Timeout',
     },
 };
 

@@ -1,13 +1,4 @@
-import { IntegrationAuthenticationCredentials } from '@modules/integration-library/types/integration';
 import { Request } from 'express';
-
-export interface GoogleAuthenticationCredentials extends IntegrationAuthenticationCredentials {
-    identifier: string;
-    accessToken: string;
-    refreshToken: string;
-    tokenType: string;
-    expiresIn: number;
-}
 
 export class GoogleSession {
     userId: string;

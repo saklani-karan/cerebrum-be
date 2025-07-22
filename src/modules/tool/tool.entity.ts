@@ -19,9 +19,6 @@ export class Tool {
     @Column({ type: 'text' })
     description: string;
 
-    @Column({ name: 'user_params', type: 'jsonb' })
-    userParams: Record<string, any>;
-
-    @Column({ name: 'workflow_params', type: 'jsonb' })
-    workflowParams: Record<string, any>;
+    @Column({ name: 'params', type: 'jsonb' })
+    params: Record<string, any>;
 }

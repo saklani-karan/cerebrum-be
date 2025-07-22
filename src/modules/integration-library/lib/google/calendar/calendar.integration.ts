@@ -5,6 +5,8 @@ import { REQUEST } from '@nestjs/core';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @IntegrationMetadata.define({
     name: 'Google Calendar',
@@ -17,7 +19,8 @@ export default class GoogleCalendarIntegration extends GoogleIntegration {
         @Inject(REQUEST) protected readonly request: Request,
         protected readonly configService: ConfigService,
         protected readonly httpService: HttpService,
+        @Inject(CACHE_MANAGER) cacheManager: Cache,
     ) {
-        super(request, configService, httpService);
+        super(request, configService, httpService, cacheManager);
     }
 }

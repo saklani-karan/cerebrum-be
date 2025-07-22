@@ -24,6 +24,7 @@ import config from './config';
 import { HttpModule } from '@modules/http/http.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AppAuthenticationGuard } from '@guards/authentication';
+import { AssistantModule } from '@modules/assistant/assistant.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -69,6 +70,7 @@ import { AppAuthenticationGuard } from '@guards/authentication';
         ToolModule,
         IntegrationModule,
         SeederModule,
+        AssistantModule,
     ],
     controllers: [],
     providers: [

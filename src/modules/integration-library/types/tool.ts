@@ -1,37 +1,47 @@
-import { IntegrationAuthenticationCredentials, IntegrationInterface } from './integration';
+import { IntegrationInterface } from './integration';
 import { Logger } from '@nestjs/common';
 import { ErrorTypes, ValidationError } from '@utils/exceptions';
 import { ZodError, z } from 'zod';
 import { throwException } from '@utils/exceptions';
 import { ToolDefinitionMetadata, ToolMetadata } from '../decorators';
+import { IntegrationCredentials } from '@modules/integration-auth/integration-auth.entity';
+
+export interface ExecutableToolInterface<
+    TInput extends Record<string, any> = Record<string, any>,
+    TOutput extends Record<string, any> = Record<string, any>,
+> {
+    run(params: TInput): Promise<TOutput>;
+    initialize(credentials: IntegrationCredentials): void;
+}
 
 export abstract class ToolDefinitionTemplate<
     TInput extends Record<string, any> = Record<string, any>,
     TOutput extends Record<string, any> = Record<string, any>,
-    AuthenticationCredentials extends
-        IntegrationAuthenticationCredentials = IntegrationAuthenticationCredentials,
-> {
-    protected integration: IntegrationInterface<AuthenticationCredentials>;
-    protected credentials: AuthenticationCredentials;
+> implements ExecutableToolInterface<TInput, TOutput>
+{
+    protected integration: IntegrationInterface;
     protected logger: Logger;
 
-    constructor(integration: IntegrationInterface<AuthenticationCredentials>) {
+    constructor(integration: IntegrationInterface) {
         this.integration = integration;
         this.logger = new Logger(this.constructor.name);
     }
 
-    protected async authenticate() {
-        this.credentials = await this.integration.authenticate();
+    initialize(credentials: IntegrationCredentials): void {
+        this.integration.setCredentials(credentials);
     }
 
-    protected abstract execute(params: TInput): Promise<TOutput>;
+    protected abstract execute(
+        params: TInput,
+        credentials: IntegrationCredentials,
+    ): Promise<TOutput>;
 
     async run(params: TInput): Promise<TOutput> {
         const validatedParams = this.validateParams(params);
 
-        await this.authenticate();
+        const credentials = await this.integration.authenticate();
 
-        return this.execute(validatedParams);
+        return this.execute(validatedParams, credentials);
     }
 
     private validateParams<Input extends Record<string, any>>(params: Input): Input {

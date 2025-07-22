@@ -1,5 +1,5 @@
 import { CallbackResponse, IntegrationInterface } from '../../types/integration';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { GoogleIntegrationConfig } from '@config/integration/google';
@@ -7,39 +7,62 @@ import {
     IntegrationCredentialsType,
     OAuth2Credentials,
 } from '@modules/integration-auth/integration-auth.entity';
-import {
-    GoogleSession,
-    GoogleTokenResponse,
-    GoogleUser,
-    GoogleAuthenticationCredentials,
-} from './types';
+import { GoogleSession, GoogleTokenResponse, GoogleUser } from './types';
 import { HttpService } from '@nestjs/axios';
-import { lastValueFrom } from 'rxjs';
+import { config, lastValueFrom } from 'rxjs';
 import { ErrorTypes, throwException } from '@utils/exceptions';
 import { AxiosResponse } from 'axios';
 import { tryCatch } from '@utils/try-catch';
-
-export default class GoogleIntegration
-    implements IntegrationInterface<GoogleAuthenticationCredentials>
-{
+import { RefreshTokenManager } from '@modules/strategies/creds-management/refresh-token-manager';
+import { CredentialsManagementStrategy } from '@modules/strategies/creds-management/types';
+import { IntegrationCredentials } from '@modules/integration-auth/integration-auth.entity';
+import { Cache } from 'cache-manager';
+export default class GoogleIntegration implements IntegrationInterface {
     private readonly logger: Logger;
+    private readonly credentialsManager: CredentialsManagementStrategy;
+    private credentials: IntegrationCredentials;
+    private integrationAuthIdentifier: string;
+
     constructor(
         protected readonly request: Request,
         protected readonly configService: ConfigService,
         protected readonly httpService: HttpService,
+        cacheManager: Cache,
     ) {
         this.logger = new Logger(this.constructor.name);
+        this.credentialsManager = new RefreshTokenManager(cacheManager);
     }
 
-    async authenticate(): Promise<GoogleAuthenticationCredentials> {
-        return {
-            identifier: 'identifier',
-            accessToken: 'accessToken',
-            refreshToken: 'refreshToken',
-            tokenType: 'tokenType',
-            expiresIn: 3600,
-            expirationAt: new Date(Date.now() + 3600 * 1000),
-        };
+    async authenticate(forceRefresh?: boolean): Promise<IntegrationCredentials> {
+        const config: GoogleIntegrationConfig = this.configService.getOrThrow('integration.google');
+        const token: IntegrationCredentials = await this.credentialsManager.retrieve(
+            this.integrationAuthIdentifier,
+            {
+                refreshCb: async (credentials: OAuth2Credentials) => {
+                    const { accessToken, refreshToken } = credentials;
+
+                    const tokenResponse: AxiosResponse<GoogleTokenResponse> = await lastValueFrom(
+                        this.httpService.post(config.tokenUrl, {
+                            client_id: config.clientId,
+                            client_secret: config.clientSecret,
+                            grant_type: 'refresh_token',
+                            refresh_token: refreshToken,
+                        }),
+                    );
+
+                    credentials.accessToken = tokenResponse.data.access_token;
+                    credentials.refreshToken = tokenResponse.data.refresh_token;
+                    credentials.expiresAt = new Date(
+                        Date.now() + tokenResponse.data.expires_in * 1000,
+                    );
+
+                    return credentials;
+                },
+                forceRefresh,
+            },
+        );
+
+        return token;
     }
 
     async redirect(finalRedirectUrl: string): Promise<string> {
@@ -104,6 +127,10 @@ export default class GoogleIntegration
             },
             userId: session.userId,
         };
+    }
+
+    setCredentials(credentials: IntegrationCredentials): void {
+        this.credentials = credentials;
     }
 
     private async retrieveUser(

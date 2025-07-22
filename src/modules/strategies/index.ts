@@ -3,6 +3,7 @@ import { CreateUserStrategyModule } from './create-user/module';
 import { SignPasswordStrategyModule } from './sign-password/module';
 import { SignUpStrategyModule } from './sign-up/module';
 import { IntegrationAuthStrategyModule } from './integration-auth/module';
+import { ToolExecutionStrategyModule } from './tool-execution/module';
 
 export const StrategyModules = [
     SignUpStrategyModule,
@@ -10,4 +11,5 @@ export const StrategyModules = [
     AuthStrategyModule,
     CreateUserStrategyModule,
     IntegrationAuthStrategyModule,
+    ToolExecutionStrategyModule,
 ];

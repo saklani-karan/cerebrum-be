@@ -7,6 +7,7 @@ import {
     buildIntegrationInjectionToken,
 } from './types/integration';
 import { Request } from 'express';
+import { IntegrationCredentials } from '@modules/integration-auth/integration-auth.entity';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ToolFactory {
@@ -17,7 +18,11 @@ export class ToolFactory {
         this.logger = new Logger(this.constructor.name);
     }
 
-    async resolveTool(integrationKey: string, toolKey: string): Promise<void> {
+    async resolveTool(
+        integrationKey: string,
+        toolKey: string,
+        credentials: IntegrationCredentials,
+    ): Promise<void> {
         this.logger.log(`Creating tool: ${toolKey}`);
         let resolvedTool: ToolDefinitionTemplate;
 
@@ -30,6 +35,7 @@ export class ToolFactory {
             throw new Error(`Tool ${toolKey} not found`);
         }
 
+        resolvedTool.initialize(credentials);
         this.tool = resolvedTool;
     }
 

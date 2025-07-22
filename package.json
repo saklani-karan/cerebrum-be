@@ -57,6 +57,7 @@
         "express-session": "^1.18.1",
         "http-status-codes": "^2.3.0",
         "ioredis": "^5.6.0",
+        "json-schema-to-zod": "^2.6.1",
         "jsonwebtoken": "^9.0.2",
         "keyv": "^5.3.2",
         "passport": "^0.7.0",
@@ -69,7 +70,8 @@
         "rxjs": "^7.8.1",
         "typeorm": "^0.3.21",
         "ulid": "^2.3.0",
-        "zod": "^3.24.3"
+        "zod": "^3.24.3",
+        "zod-to-json-schema": "^3.24.6"
     },
     "devDependencies": {
         "@nestjs/cli": "^10.0.0",
