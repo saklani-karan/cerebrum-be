@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ToolDefinitionTemplate } from '@modules/integration-library/types/tool';
 import GoogleCalendarIntegration from './calendar.integration';
 import { IntegrationReference, ToolMetadata } from '../../../decorators';
-import { GoogleAuthenticationCredentials } from '../types';
+import { IntegrationCredentials } from '@modules/integration-auth/integration-auth.entity';
 
 export const CreateEventSchema = z.object({
     title: z.string(),
@@ -22,8 +22,7 @@ type CreateEventOutput = z.infer<typeof CreateEventSchema>;
 })
 export default class CreateEventTool extends ToolDefinitionTemplate<
     CreateEventInput,
-    CreateEventOutput,
-    GoogleAuthenticationCredentials
+    CreateEventOutput
 > {
     @IntegrationReference.define(() => GoogleCalendarIntegration)
     protected integration: GoogleCalendarIntegration;
@@ -32,8 +31,11 @@ export default class CreateEventTool extends ToolDefinitionTemplate<
         super(integration);
     }
 
-    protected async execute(params: CreateEventInput): Promise<CreateEventOutput> {
-        this.logger.log('Creating event', params);
+    protected async execute(
+        params: CreateEventInput,
+        credentials: IntegrationCredentials,
+    ): Promise<CreateEventOutput> {
+        this.logger.log('Creating event', params, credentials);
         return params;
     }
 }

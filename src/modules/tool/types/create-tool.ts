@@ -15,11 +15,7 @@ export class CreateTool {
 
     @IsObject()
     @IsNotEmpty()
-    userParams: Record<string, any>;
-
-    @IsObject()
-    @IsNotEmpty()
-    workflowParams: Record<string, any>;
+    params: Record<string, any>;
 
     @IsString()
     @IsNotEmpty()

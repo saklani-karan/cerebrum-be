@@ -1,10 +1,5 @@
 import { IntegrationCredentials } from '@modules/integration-auth/integration-auth.entity';
 
-export interface IntegrationAuthenticationCredentials {
-    identifier: string;
-    expirationAt: Date;
-}
-
 export type IntegrationAccount = {
     id: string;
     name: string;
@@ -17,13 +12,11 @@ export type CallbackResponse = {
     userId: string;
 };
 
-export interface IntegrationInterface<
-    AuthenticationCredentials extends
-        IntegrationAuthenticationCredentials = IntegrationAuthenticationCredentials,
-> {
-    authenticate(): Promise<AuthenticationCredentials>;
+export interface IntegrationInterface {
+    authenticate(forceRefresh?: boolean): Promise<IntegrationCredentials>;
     redirect(finalRedirectUrl: string): Promise<string>;
     callback(finalRedirectUrl: string): Promise<CallbackResponse>;
+    setCredentials(credentials: IntegrationCredentials): void;
 }
 
 export const buildIntegrationInjectionToken = (integrationKey: string) => {

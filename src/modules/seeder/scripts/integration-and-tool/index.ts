@@ -2,12 +2,7 @@ import { AbstractSeederService } from '../../types';
 import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Integration } from '@modules/integration/integration.entity';
-import {
-    IntegrationDefinitionMetadata,
-    IntegrationMetadata,
-    ToolDefinitionMetadata,
-    ToolMetadata,
-} from '@modules/integration-library/decorators';
+import { IntegrationDefinitionMetadata } from '@modules/integration-library/decorators';
 import { z } from 'zod';
 import { IntegrationService } from '@modules/integration/integration.service';
 import { ToolService } from '@modules/tool/tool.service';
@@ -25,6 +20,7 @@ import {
     SeederToolFilterClassReducer,
     ToolDefinitionMetadataWithIntegrationReference,
 } from './directory-scanner/tool/filter-class-reducer';
+import { integrationToolSerializerDeserializer } from '@utils/serializers/integration-tool';
 
 interface Tools {
     key: string;
@@ -86,7 +82,11 @@ export default class IntegrationAndToolSeeder extends AbstractSeederService {
                 integrationMap.set(integration.key, integration);
             });
             existingTools.forEach((tool) => {
-                toolMap.set(`${tool.integrationKey}-${tool.action}`, tool);
+                const searchKey = integrationToolSerializerDeserializer.serialize({
+                    integrationKey: tool.integrationKey,
+                    action: tool.action,
+                });
+                toolMap.set(searchKey, tool);
             });
             this.logger.log(`seed: Found ${integrationMap.size} integration map entries`);
             this.logger.log(`seed: Found ${toolMap.size} tool map entries`);
@@ -165,21 +165,24 @@ export default class IntegrationAndToolSeeder extends AbstractSeederService {
         this.logger.log(`determineActionForTool: Determining action for tool ${systemTool.key}`);
         const { key, name, description, params, integrationReference: integrationKey } = systemTool;
 
-        if (!toolMap.has(`${integrationKey}-${key}`)) {
+        const searchKey = integrationToolSerializerDeserializer.serialize({
+            integrationKey,
+            action: key,
+        });
+        if (!toolMap.has(searchKey)) {
             this.logger.log(`determineActionForTool: Tool ${systemTool.key} not found, creating`);
             toCreate.push({
                 integrationKey,
                 action: key,
                 name,
                 description,
-                userParams: params,
-                workflowParams: params,
+                params: params,
             });
             this.logger.log(`determineActionForTool: Tool ${systemTool.key} created`);
             return;
         }
 
-        const tool = toolMap.get(`${integrationKey}-${key}`);
+        const tool = toolMap.get(searchKey);
         this.logger.log(`determineActionForTool: Tool ${systemTool.key} found, updating`);
         let isUpdated = false;
         if (tool.name !== name) {
@@ -191,17 +194,21 @@ export default class IntegrationAndToolSeeder extends AbstractSeederService {
             isUpdated = true;
         }
 
+        if (tool.params !== params) {
+            tool.params = params;
+            isUpdated = true;
+        }
+
         if (!isUpdated) {
             this.logger.log(`determineActionForTool: Tool ${systemTool.key} not updated`);
             return;
         }
         this.logger.log(`determineActionForTool: Tool ${systemTool.key} updated`);
 
-        toUpdate[`${integrationKey}-${key}`] = {
+        toUpdate[searchKey] = {
             name: tool.name,
             description: tool.description,
-            userParams: tool.userParams,
-            workflowParams: tool.workflowParams,
+            params: tool.params,
         };
     }
 
